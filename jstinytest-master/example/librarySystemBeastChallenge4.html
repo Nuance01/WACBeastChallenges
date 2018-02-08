@@ -124,7 +124,6 @@ tests({
     eq("Jimmy lives in Los Angeles", librarySystem('locationStatement'));
   },
   'It should be able to create libraries with dependencies out of order': function() {
-    debugger;
     librarySystem('workBlurb', ['employee', 'company'], function(employee, company) {
       return employee + ' works at ' + company;
     });
