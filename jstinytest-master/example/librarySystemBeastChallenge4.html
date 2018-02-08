@@ -1,0 +1,161 @@
+<script src="../simpletest.js"></script>
+<script>
+ 
+(function() {
+
+  var libraryStorage = {};
+  var libraryCacheStorage = {};
+
+  // Constructor for libraries that must be held in cache as objects
+  var Library = function(dependenciesArray, callback) {
+    this.dependencies = dependenciesArray;
+    this.callback = callback;
+  }
+
+  // Checks if a library's dependencies exist in storage
+  function checkForMissingDependencies(dependenciesArray) {
+    var missingDependencies = 0;
+    dependenciesArray.forEach(function(dependency) {
+      if (!libraryStorage.hasOwnProperty(dependency)) {
+        missingDependencies++;
+      }
+    });
+    if (missingDependencies > 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  // Stores a library with missing dependencies in a cache as a library object.
+  function holdInLibraryCache(libraryName, dependenciesArray, callback) {
+    libraryCacheStorage[libraryName] = new Library(dependenciesArray, callback);
+  }
+
+  // Checks if any libraries held in cache now have their dependencies.
+  // If so, loads their dependencies and moves them from cache to libraryStorage.
+  function processLibraryCache() {
+    // Create an array of the names of all libraries held in cache
+    var unStoredLibraries = Object.keys(libraryCacheStorage);
+    // For each of these, check if their dependencies now exist in libraryStorage
+    unStoredLibraries.forEach(function(library) {
+      var dependenciesArray = libraryCacheStorage[library].dependencies;
+      if (!checkForMissingDependencies(dependenciesArray)) {
+        // If all dependencies now exist, load them.
+        var argsArray = dependenciesArray.map(function(dependency) { 
+            return librarySystem(dependency); 
+        });
+        // Store the library with its loaded dependencies in libraryStorage
+        libraryStorage[library] = libraryCacheStorage[library].callback.apply(this, argsArray);
+        // Now remove that newly stored library from the cache
+        delete libraryCacheStorage[library];
+      }
+    });
+  }
+
+  function librarySystem(libraryName, dependenciesArray, callback) {
+    // If more than just the libraryName was passed, we are storing a library
+    if (arguments.length > 1) {
+      // Case 1: The library to store has dependencies
+      if (dependenciesArray.length > 0) {
+        // If library's dependencies don't exist yet, hold in cache
+        if (checkForMissingDependencies(dependenciesArray)) {
+          holdInLibraryCache(libraryName, dependenciesArray, callback);
+        // If library's dependencies do exist, load them and store library
+        } else {
+          // Map the *return values* of each dependency into a new array
+          var argsArray = dependenciesArray.map(function(dependency) { 
+            return librarySystem(dependency); 
+          });
+          // Store library with loaded dependencies
+          libraryStorage[libraryName] = callback.apply(this, argsArray);
+          processLibraryCache();
+        }
+      } else {
+        // Case 2: The library to store has no dependencies, so just store it
+        libraryStorage[libraryName] = callback();
+        processLibraryCache();
+      }
+    } else {
+      // If only libraryName was passed, we are retrieving a library
+      // First check if library is in cache and never got its dependencies
+      if (libraryCacheStorage.hasOwnProperty(libraryName)) {
+        if (checkForMissingDependencies(libraryCacheStorage[libraryName].dependencies)) {
+          throw new Error("Required dependencies do not exist!");
+        }
+      }
+      // else return requested library
+      return libraryStorage[libraryName];
+    }
+  }
+
+  window.librarySystem = librarySystem;
+  
+})();
+
+
+
+tests({
+  'It should return a library with 0 dependencies': function() {
+    librarySystem('getDemogorgon', [], function(){
+      return 'Demogorgon';
+    });
+    eq('Demogorgon', librarySystem('getDemogorgon'));
+  },
+  'It should return a library with 1 loaded dependency': function() {
+    librarySystem('name', [], function(){
+      return 'Mr. Ed';
+    });
+    librarySystem('greeting', ['name'], function(name) {
+      return "Hello, I'm " + name;
+    });
+    eq("Hello, I'm Mr. Ed", librarySystem('greeting'));
+  },
+  'It should return a library with 2 loaded dependencies': function() {
+    librarySystem('firstName', [], function(){
+      return 'Jimmy';
+    });    
+    librarySystem('location', [], function(){
+      return 'Los Angeles';
+    });
+    librarySystem('locationStatement', ['firstName', 'location'], function(firstName, location) {
+      return firstName + " lives in " + location;
+    });
+    eq("Jimmy lives in Los Angeles", librarySystem('locationStatement'));
+  },
+  'It should be able to create libraries with dependencies out of order': function() {
+    debugger;
+    librarySystem('workBlurb', ['employee', 'company'], function(employee, company) {
+      return employee + ' works at ' + company;
+    });
+    librarySystem('employee', [], function() {
+      return 'Gordon';
+    });
+    librarySystem('company', [], function() {
+      return 'Watch and Code';
+    });
+    eq("Gordon works at Watch and Code", librarySystem('workBlurb'));
+  },
+  'It should run callback functions for each library only once': function() {
+    var counter1 = 0,
+        counter2 = 0,
+        counter3 = 0;
+    librarySystem('commute', ['commuter', 'miles'], function(commuter, miles) {
+      counter1++;
+      return commuter + " drives " + miles + " miles for work.";
+    });
+    librarySystem('commuter', [], function() {
+      counter2++;
+      return 'Darlene';
+    });
+    librarySystem('miles', [], function() {
+      counter3++;
+      return '8';
+    });
+    eq(counter1, 1);
+    eq(counter2, 1);
+    eq(counter3, 1);
+  }
+});
+
+</script>

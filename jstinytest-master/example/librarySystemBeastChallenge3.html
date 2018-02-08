@@ -1,0 +1,59 @@
+<script src="../tinytest.js"></script>
+<script>
+  
+(function() {
+
+  var libraryStorage = {};
+
+  function librarySystem(libraryName, dependenciesArray, callback) {
+    // If more than just the libraryName was passed, we are storing a library
+    if (arguments.length > 1) {
+      // Case 1: The library to store has dependencies
+      if (dependenciesArray.length > 0) {
+        // Map the *return values* of each dependency into a new array
+        var argsArray = dependenciesArray.map(function(dependency) { 
+          return librarySystem(dependency); 
+        });
+      }
+      // Store the library with its loaded dependencies (passed in the argsArray)
+      // Also handles Case 2: The library has no dependencies (argsArray will be empty)
+      libraryStorage[libraryName] = callback.apply(this, argsArray);
+    } else {
+      // If only libraryName was passed, we are retrieving a library
+      return libraryStorage[libraryName];
+    }
+  }
+
+  window.librarySystem = librarySystem;
+  
+})();
+
+
+
+tests({
+  'It should return a library with 0 dependencies': function() {
+    librarySystem('name', [], function(){
+      return 'Jimmy';
+    });
+    eq('Jimmy', librarySystem('name'));
+
+  },
+  'It should return a library with 1 loaded dependency': function() {
+    librarySystem('greeting', ['name'], function(name) {
+      return "Hello, I'm " + name;
+    });
+    eq("Hello, I'm Jimmy", librarySystem('greeting'));
+  },
+  'It should return a library with 2 loaded dependencies': function() {
+    librarySystem('location', [], function(){
+      return 'Los Angeles';
+    });
+    librarySystem('locationStatement', ['name', 'location'], function(name, location) {
+      return name + " lives in " + location;
+    });
+    eq("Jimmy lives in Los Angeles", librarySystem('locationStatement'));
+  },
+
+});
+
+</script>
