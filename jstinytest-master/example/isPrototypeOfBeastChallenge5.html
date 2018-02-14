@@ -1,0 +1,101 @@
+<script src="../simpletest.js"></script>
+<script>
+
+/**
+ * isPrototypeOf checks if a given prototype is in the prototype chain of a given object.
+ *
+ * It takes two arguments, the prototype and the object to check against it.
+ * 
+ * Usage: isPrototypeOf(proto, obj);
+ */
+
+function isPrototypeOf(proto, obj) {
+  // Base case
+  // If the object is null, or we have reached the end of the prototype chain with no match, return false.
+  if (obj === null) {
+    return false;
+  // Check if given prototype is the prototype of the given object.
+  } else if (proto === Object.getPrototypeOf(obj)) {
+    return true;
+
+  // Recursive case
+  // Recursively check up the prototype chain of object.
+  } else {
+    obj = Object.getPrototypeOf(obj);
+    return isPrototypeOf(proto, obj);
+  }
+}
+
+tests({
+  'It should return true if first argument is prototype of second argument': function() {
+    var canine = {
+      bark: function() {
+        console.log('bark');
+      }
+    };
+
+    var dog = Object.create(canine);
+    dog.fetch = function() {
+      console.log('fetch');
+    };
+
+    var myDog = Object.create(dog);
+
+    eq(dog.isPrototypeOf(myDog), isPrototypeOf(dog, myDog));
+  },
+  'It should return false if first argument is not prototype of second argument': function() {
+    var canine = {
+      bark: function() {
+        console.log('bark');
+      }
+    };
+
+    var dog = Object.create(canine);
+    dog.fetch = function() {
+      console.log('fetch');
+    };
+
+    var myDog = Object.create(dog);
+    var empty = Object.create(null);
+
+    eq(dog.isPrototypeOf(empty), isPrototypeOf(dog, empty));
+  },
+  'It should return true that Object.prototype is in the prototype chain of the second argument': function() {
+    var canine = {
+      bark: function() {
+        console.log('bark');
+      }
+    };
+
+    var dog = Object.create(canine);
+    dog.fetch = function() {
+      console.log('fetch');
+    };
+
+    var myDog = Object.create(dog);
+
+    eq(Object.prototype.isPrototypeOf(myDog), isPrototypeOf(Object.prototype, myDog));
+  },
+  'It should return true if first argument is anywhere in prototype chain of second argument': function() {
+    var canine = {
+      bark: function() {
+        console.log('bark');
+      }
+    };
+
+    var dog = Object.create(canine);
+    dog.fetch = function() {
+      console.log('fetch');
+    };
+
+    var myDog = Object.create(dog);
+
+    eq(isPrototypeOf(canine, myDog), true);
+  }
+});
+
+
+
+
+
+</script>
