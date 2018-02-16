@@ -1,0 +1,134 @@
+<script src="../simpletest.js"></script>
+<script>
+ 
+/**
+ * toFixed(value, precision)
+ * 
+ * An implementation of the toFixed method that uses string manipulation to round fractional numbers
+ * Takes a number and a precision value as arguments, and returns a string representing the rounded value
+ *
+ * Done as an exercise in string manipulation
+ */
+
+ 
+function toFixed(value, precision) {
+  // initial checks
+  // if no precision value was passed, default to 0
+  if (arguments.length === 1) {
+    var precision = 0;
+  }
+  // make sure precision value is valid
+  if (precision < 0 || precision % 1 != 0) {
+    throw new Error('Precision value must be a whole number greater than 0');
+  } 
+
+
+  // convert value to string for string manipulation
+  var stringValue = value.toString();
+  
+  // return whole numbers with proper precision
+  if (value % 1 === 0) {
+    if (precision > 0) {
+      var padding = "";
+      while (padding.length < precision) {
+        padding = padding + "0";
+      }
+      return stringValue + "." + padding;
+    } else if (precision === 0) {
+      return stringValue;
+    }
+  }
+
+  // save the index position of the decimal character
+  var decimalIndex = stringValue.indexOf('.');  
+
+  // extract substrings to concatenate later
+  var beginningSubstr = stringValue.substr(0, decimalIndex);
+  var middleSubstr = stringValue.substr(decimalIndex + 1, precision);
+  var endingSubstr = stringValue.substr(decimalIndex + precision + 1);
+
+  // pad with 0's if necessary
+  while (middleSubstr.length < precision) {
+    middleSubstr = middleSubstr + "0";
+  };
+
+  // concatenate substrings to produce new value with decimal moved
+  var stringWithDecimalMoved = beginningSubstr + middleSubstr + '.' + endingSubstr;
+
+  // convert to number, round result, convert back to string
+  var numberToRound = Number(stringWithDecimalMoved);
+  var roundedNumber = Math.round(numberToRound);
+  var roundedString = roundedNumber.toString();
+
+  // extract substrings of rounded result to concatenate later
+  var lastCharIndex = roundedString.length - 1;
+  beginningSubstr = roundedString.substr(0, lastCharIndex - (precision -1));
+  endingSubstr = roundedString.substr(lastCharIndex - precision + 1);
+
+  // add leading 0 if necessary
+  if (beginningSubstr.length === 0) {
+    beginningSubstr = "0";
+  }
+
+  // concatenate the final result
+  var finalResult;
+  if (precision > 0) {
+    finalResult = beginningSubstr + '.' + endingSubstr;
+  } else {
+    finalResult = beginningSubstr;
+  }
+
+  // return result as number
+  return finalResult;
+}
+
+// Data for tests:
+var precision = 2;
+var result;
+
+tests({
+  'It should properly round down': function() {
+    result = toFixed(20.034, precision);
+    eq("20.03", result);
+  },
+  'It should properly round up': function() {
+    result = toFixed(20.135, precision);
+    eq("20.14", result);
+  },
+  'It should properly round edge case 10.235 to 10.24': function() {
+    result = toFixed(10.235, precision);
+    eq("10.24", result);
+  },
+  'It should properly round edge case 0.615 to 0.62': function() {
+    result = toFixed(0.615, precision);
+    eq("0.62", result);
+  },
+  'It should properly round edge case 1.005 to 1.01': function() {
+    result = toFixed(1.005, precision);
+    eq("1.01", result);
+  },
+  'It should properly return whole numbers when a positive precision value is passed': function() {
+    result = toFixed(15, precision);
+    eq("15.00", result);
+  },
+  'It should properly return whole numbers if the precision is 0': function() {
+    result = toFixed(235, 0);
+    eq("235", result);
+  },
+  'It should properly round fractional numbers if the precision is 0': function() {
+    result = toFixed(1234.56, 0);
+    eq(1235, result);
+  },
+  'It should properly round numbers where precision is greater than number of decimal places in value': function() {
+    result = toFixed(10.5, 2);
+    eq("10.50", result);
+  },  
+  'It should properly round numbers with a custom precision value': function() {
+    result = toFixed(3.14159, 3);
+    eq("3.142", result);
+  }
+})
+
+
+
+</script>
